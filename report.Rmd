@@ -4,3 +4,63 @@ author: "Gates Cao"
 date: "3/6/2018"
 output: html_document
 ---
+```{r}
+library(tidyverse)
+library(reshape2)
+```
+
+```{r}
+Boston <- Boston
+```
+
+###Exploratory data analysis
+```{r}
+Boston %>%
+  select(-chas) %>%
+  pairs()
+```
+
+```{r}
+#correlation matrix
+cormat <- cor(Boston)
+melted_cormat <- melt(cormat)
+ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
+  geom_tile()
+```
+
+
+###Simple linear regression
+```{r}
+attach(Boston)
+plot(crim, medv)
+lm_fit <- lm(crim ~ medv, data = Boston)
+summary(lm_fit)
+plot(lm_fit)
+```
+
+```{r}
+plot(lstat, medv)
+lm_fit <- lm(medv ~ lstat, data = Boston)
+summary(lm_fit)
+```
+diagnostic plots
+tests
+
+###Stepwise selection
+forward
+backward
+
+###Multiple linear regression 
+```{r}
+lm_fit <- lm(medv ~ lstat + age, data = Boston)
+summary(lm_fit)
+```
+
+
+
+###Shrinkage methods (lasso & ridge)
+```{r}
+
+```
+
+
