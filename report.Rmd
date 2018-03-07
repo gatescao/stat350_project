@@ -13,6 +13,8 @@ library(reshape2)
 Boston <- Boston
 ```
 
+Problem: predict median house values
+
 ###Exploratory data analysis
 ```{r}
 Boston %>%
