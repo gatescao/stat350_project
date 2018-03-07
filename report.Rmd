@@ -1,0 +1,6 @@
+---
+title: "final_project"
+author: "Gates Cao"
+date: "3/6/2018"
+output: html_document
+---
