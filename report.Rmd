@@ -48,8 +48,6 @@ plot(lstat, medv)
 lm_fit <- lm(medv ~ lstat, data = Boston)
 summary(lm_fit)
 ```
-diagnostic plots
-tests
 
 ###Stepwise selection
 ```{r}
@@ -88,6 +86,9 @@ plot(lm_fit)
 #Mean squared error
 mean((Boston$medv - lm_fit$fitted.values)^2)
 ```
+
+###Tests
+
 
 
 ###Shrinkage methods (lasso & ridge)
