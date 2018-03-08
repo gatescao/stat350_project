@@ -4,9 +4,12 @@ author: "Gates Cao"
 date: "3/6/2018"
 output: html_document
 ---
-```{r}
+```{r,message=F}
 library(tidyverse)
 library(reshape2)
+library(MASS)
+library(leaps)
+library(glmnet)
 ```
 
 ```{r}
@@ -49,8 +52,39 @@ diagnostic plots
 tests
 
 ###Stepwise selection
-forward
-backward
+```{r}
+#Forward
+fit_fwd <- regsubsets(medv ~., data = Boston, nvmax = 13, method = "forward")
+fwd_summary <- summary(fit_fwd)
+which.min(fwd_summary$cp)
+which.min(fwd_summary$bic)
+which.max(fwd_summary$adjr2)
+fit_fwd %>% coef(11)
+```
+
+```{r}
+#Backward
+fit_bwd <- regsubsets(medv ~., data = Boston, nvmax = 13, method = "backward")
+bwd_summary <- summary(fit_bwd)
+which.min(bwd_summary$cp)
+which.min(bwd_summary$bic)
+which.max(bwd_summary$adjr2)
+fit_bwd %>% coef(11)
+```
+
+```{r}
+lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
+summary(lm_fit)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(lm_fit)
+```
+
+```{r}
+mean((Boston$medv - lm_fit$fitted.values)^2)
+```
 
 ###Multiple linear regression 
 ```{r}
@@ -62,7 +96,14 @@ summary(lm_fit)
 
 ###Shrinkage methods (lasso & ridge)
 ```{r}
+x <- model.matrix(medv ~., Boston)[,-1]
+y <- Boston$medv
+```
 
+```{r}
+lambda_grid <- 10^seq(10, -2, length = 100)
+ridge_mod <- glmnet(x, y, alpha = 0, lambda = lambda_grid)
+dim(coef(ridge_mod))
 ```
 
 
