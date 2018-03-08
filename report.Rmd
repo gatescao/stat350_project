@@ -90,7 +90,6 @@ mean((Boston$medv - lm_fit$fitted.values)^2)
 ###Tests
 
 
-
 ###Shrinkage methods (lasso & ridge)
 ```{r}
 x <- model.matrix(medv ~., Boston)[,-1]
