@@ -73,25 +73,21 @@ fit_bwd %>% coef(11)
 ```
 
 ```{r}
+#Best first-order linear model
 lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
 summary(lm_fit)
 ```
 
 ```{r}
+#Diagnostic plots
 par(mfrow = c(2,2))
 plot(lm_fit)
 ```
 
 ```{r}
+#Mean squared error
 mean((Boston$medv - lm_fit$fitted.values)^2)
 ```
-
-###Multiple linear regression 
-```{r}
-lm_fit <- lm(medv ~ lstat + age, data = Boston)
-summary(lm_fit)
-```
-
 
 
 ###Shrinkage methods (lasso & ridge)
