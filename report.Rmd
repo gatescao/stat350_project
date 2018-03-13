@@ -28,6 +28,7 @@ Boston %>%
 ```{r}
 #correlation matrix
 cormat <- cor(Boston)
+cormat
 melted_cormat <- melt(cormat)
 ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
   geom_tile()
@@ -61,6 +62,25 @@ fit_fwd %>% coef(11)
 ```
 
 ```{r}
+best_fit_fwd <- tibble(
+  num_pred = 1:13,
+  RSS = fwd_summary$rss,
+  Adj_R2 = fwd_summary$adjr2,
+  Cp = fwd_summary$cp,
+  BIC = fwd_summary$bic
+) %>%
+  gather(key = "statistics", value = "value", -num_pred) 
+
+best_fit_fwd %>%
+    ggplot(aes(x = num_pred, y = value)) +
+    geom_point() +
+    geom_line() +
+    geom_vline(aes(xintercept = 11), color = "red") +
+    facet_wrap(~ statistics, ncol = 2, scales = "free") +
+    ggtitle("Forward selection")
+```
+
+```{r}
 #Backward
 fit_bwd <- regsubsets(medv ~., data = Boston, nvmax = 13, method = "backward")
 bwd_summary <- summary(fit_bwd)
@@ -71,9 +91,28 @@ fit_bwd %>% coef(11)
 ```
 
 ```{r}
+best_fit_bwd <- tibble(
+  num_pred = 1:13,
+  RSS = bwd_summary$rss,
+  Adj_R2 = bwd_summary$adjr2,
+  Cp = bwd_summary$cp,
+  BIC = bwd_summary$bic
+) %>%
+  gather(key = "statistics", value = "value", -num_pred) 
+
+best_fit_bwd %>%
+    ggplot(aes(x = num_pred, y = value)) +
+    geom_point() +
+    geom_line() +
+    geom_vline(aes(xintercept = 11), color = "red") +
+    facet_wrap(~ statistics, ncol = 2, scales = "free") +
+    ggtitle("Backward selection")
+```
+
+```{r}
 #Best first-order linear model
 lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
-summary(lm_fit)
+summary(lm_fit) #Rsquared = 0.7406
 ```
 
 ```{r}
@@ -85,6 +124,16 @@ plot(lm_fit)
 ```{r}
 #Mean squared error
 mean((Boston$medv - lm_fit$fitted.values)^2)
+```
+
+```{r}
+comat <- Boston %>%
+    dplyr::select(crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat) %>%
+    cor()
+
+melted_cormat <- melt(cormat)
+ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
+  geom_tile()
 ```
 
 ###Tests
