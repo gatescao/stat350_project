@@ -34,20 +34,13 @@ ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile()
 ```
 
-
-###Simple linear regression
+###Train-test split
 ```{r}
-attach(Boston)
-plot(crim, medv)
-lm_fit <- lm(crim ~ medv, data = Boston)
-summary(lm_fit)
-plot(lm_fit)
-```
-
-```{r}
-plot(lstat, medv)
-lm_fit <- lm(medv ~ lstat, data = Boston)
-summary(lm_fit)
+#train-test split
+set.seed(1)
+train <- sample(1:nrow(x), nrow(x)/2)
+test <- (-train)
+y_test <- y[test]
 ```
 
 ###Stepwise selection
@@ -111,7 +104,7 @@ best_fit_bwd %>%
 
 ```{r}
 #Best first-order linear model
-lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
+lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston[train,])
 summary(lm_fit) #Rsquared = 0.7406
 ```
 
@@ -124,10 +117,12 @@ par(mfrow = c(1,1))
 
 ```{r}
 #Mean squared error
-mean((Boston$medv - lm_fit$fitted.values)^2)
+lm_pred <- predict(lm_fit, Boston[test,])
+mean((Boston[test,]$medv - lm_pred)^2)
 ```
 
 ```{r}
+#correlation matrix
 comat <- Boston %>%
     dplyr::select(crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat) %>%
     cor()
@@ -151,13 +146,6 @@ y <- Boston$medv
 lambda_grid <- 10^seq(10, -2, length = 100)
 ridge_mod <- glmnet(x, y, alpha = 0, lambda = lambda_grid)
 dim(coef(ridge_mod))
-```
-
-```{r}
-set.seed(1)
-train <- sample(1:nrow(x), nrow(x)/2)
-test <- (-train)
-y_test <- y[test]
 ```
 
 ```{r}
