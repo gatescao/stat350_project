@@ -119,6 +119,7 @@ summary(lm_fit) #Rsquared = 0.7406
 #Diagnostic plots
 par(mfrow = c(2,2))
 plot(lm_fit)
+par(mfrow = c(1,1))
 ```
 
 ```{r}
@@ -145,10 +146,61 @@ x <- model.matrix(medv ~., Boston)[,-1]
 y <- Boston$medv
 ```
 
+###Ridge
 ```{r}
 lambda_grid <- 10^seq(10, -2, length = 100)
 ridge_mod <- glmnet(x, y, alpha = 0, lambda = lambda_grid)
 dim(coef(ridge_mod))
 ```
 
+```{r}
+set.seed(1)
+train <- sample(1:nrow(x), nrow(x)/2)
+test <- (-train)
+y_test <- y[test]
+```
 
+```{r}
+ridge_mod <- glmnet(x[train,], y[train], alpha = 0, lambda = lambda_grid, thresh = 1e-12)
+ridge_pred <- predict(ridge_mod, s = 4, newx = x[test,])
+mean((ridge_pred - y_test)^2)
+```
+
+```{r}
+lm(y ~ x, subset = train)
+predict(ridge_mod, x = x[train,], y = y[train], s = 0, exact = T, type = "coefficients")[1:14,]
+```
+
+```{r}
+set.seed(1)
+cv.out <- cv.glmnet(x[train,], y[train], alpha = 0)
+plot(cv.out)
+
+bestlam <- cv.out$lambda.min
+ridge_pred <- predict(ridge_mod, s = bestlam, newx = x[test,])
+mean((ridge_pred - y_test)^2)
+out <- glmnet(x, y, alpha = 0)
+predict(out, type = "coefficients", s = bestlam)[1:14,]
+```
+
+###Lasso
+```{r}
+lasso_mod <- glmnet(x[train,], y[train], alpha = 1, lambda = lambda_grid)
+plot(lasso_mod)
+```
+
+```{r}
+set.seed(1)
+cv.out <- cv.glmnet(x[train,], y[train], alpha = 1)
+plot(cv.out)
+
+bestlam <- cv.out$lambda.min
+lasso_pred <- predict(lasso_mod, s = bestlam, newx = x[test,])
+mean((lasso_pred - y_test)^2)
+```
+
+```{r}
+out <- glmnet(x, y, alpha = 1, lambda = lambda_grid)
+lasso_coef <- predict(out, type = "coefficients", s = bestlam)[1:14,]
+lasso_coef
+```
