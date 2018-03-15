@@ -1,6 +1,6 @@
 ---
 title: "final_project"
-author: "Gates Cao"
+author: "Gates Cao, Bryan Li, Brandon Arias"
 date: "3/6/2018"
 output: html_document
 ---
@@ -13,18 +13,11 @@ library(glmnet)
 ```
 
 ```{r}
+#load dataset
 Boston <- Boston
 ```
 
-Problem: predict median house values
-
 ###Exploratory data analysis
-```{r}
-Boston %>%
-  dplyr::select(-chas) %>%
-  pairs()
-```
-
 ```{r}
 #correlation matrix
 cormat <- cor(Boston)
@@ -34,6 +27,7 @@ ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile()
 ```
 
+###Variable selection
 ###Stepwise selection
 ```{r}
 #Forward
@@ -97,8 +91,6 @@ best_fit_bwd %>%
 #Best first-order linear model
 firstfit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
 summary(firstfit)
-
-#Rsquared = 0.7406
 ```
 
 ```{r}
@@ -114,17 +106,31 @@ lm_pred <- predict(firstfit, Boston)
 mean((Boston$medv - lm_pred)^2)
 ```
 
+###Shrinkage methods (lasso & ridge)
 ```{r}
-#correlation matrix
-comat <- Boston %>%
-    dplyr::select(crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat) %>%
-    cor()
-
-melted_cormat <- melt(cormat)
-ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
-  geom_tile()
+x <- model.matrix(medv ~., Boston)[,-1]
+y <- Boston$medv
 ```
 
+###Ridge
+```{r}
+lambda_grid <- 10^seq(10, -2, length = 100)
+ridge_mod <- glmnet(x, y, alpha = 0, lambda = lambda_grid)
+dim(coef(ridge_mod))
+```
+
+```{r}
+ridge_mod <- glmnet(x, y, alpha = 0, lambda = lambda_grid, thresh = 1e-12)
+ridge_pred <- predict(ridge_mod, s = 4, newx = x)
+mean((ridge_pred - y)^2)
+```
+
+```{r}
+lm(y ~ x, data = Boston)
+predict(ridge_mod, x = x, y = y, s = 0, exact = T, type = "coefficients")[1:14,]
+```
+
+=======
 ###Shrinkage methods (lasso & ridge)
 ###Ridge
 ```{r}
@@ -213,9 +219,9 @@ ptratio2 <- (Boston$ptratio)^2
 black2 <- (Boston$black)^2
 lstat2 <- (Boston$lstat)^2
  
-#~#~# 
-plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
-plot(firstfit) #look at the first one 
+par(mfrow = c(2,2))
+plot(firstfit)
+par(mfrow = c(1,1))#look at the first one 
 #Conclusion: The plot indicates that a second order terms is neccesary. 
              #In addition, there are potential outliers at the fitted values
              #near between the middle 20's
@@ -223,11 +229,10 @@ plot(firstfit) #look at the first one
 
 
 ### Second ordered terms
-second <-  cbind(medv, crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat, crim2, zn2, chas2, nox2, rm2, dis2, rad2, tax2, ptratio2, black2, lstat2)
+second <- cbind(medv, crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat, crim2, zn2, chas2, nox2, rm2, dis2, rad2, tax2, ptratio2, black2, lstat2)
 secondfit <- lm(medv~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + crim2 + zn2 + chas2 + nox2 + rm2 + dis2 + rad2 + tax2 + ptratio2 + black2 + lstat2)
-                    #crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat
-View(second)
-### 
+#crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat
+
 
 
 #~ ~ ~  Testing to see if we need ANY second ordered terms: F-test  ~ ~ ~#
@@ -278,13 +283,11 @@ step(Base, scope = list( upper=All, lower=~1 ), direction = "both", trace=TRUE)
 #     tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + 
 #     ptratio2 + zn2 + black2 + tax2)
 ###
+```
 
-
-# Residuals against Fitted Values (Y against X)
-plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
-
-
+```{r}
 # Residuals Plot vs Regressors (Predictors, Independent)
+par(mfrow = c(2,2))
 plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
 plot(crim, firstfit$residuals, xlab="Capita Crime Rate by Town", ylab="residuals", main="Residual plot for Crim")
 plot(zn, firstfit$residuals, xlab="Proportion of Residential Land Zoned", ylab="residuals", main="Residual plot for Zn")
@@ -297,8 +300,10 @@ plot(tax, firstfit$residuals, xlab="Full-Value Property-Tax Rate per $10,000", y
 plot(ptratio, firstfit$residuals, xlab="Pupil-Teacher Ratio by Town", ylab="residuals", main="Residual plot for Ptratio")
 plot(black, firstfit$residuals, xlab="Proportion of Blacks by Towns", ylab="residuals", main="Residual plot for Black")
 plot(lstat, firstfit$residuals, xlab="Lower Status of the Population", ylab="residuals", main="Residual plot for Lstat")
+par(mfrow = c(1,1))
+```
 
-
+```{r}
 ### We have two form of evidence (our plot (each predictor vs residuals) and stepwise function)
 ### to show that the second ordered terms for rm2, lstat2, dis2, crim2, ptratio2, zn2, black2, 
 ### and tax2 would need to be included in the model
@@ -322,7 +327,7 @@ mean((Boston$medv - bestfit$fitted.values)^2)
 
 summary(bestfit) #Room to drop variables
 
-#Drop tax2, zn2 (they are father away from data)
+#Drop tax2, black2 (they are father away from data)
 Drop2<- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + ptratio2 + zn2)
 #~#~# Hypothesis Testing: #~#~
 #Ho: tax2 = zn2 = 0
@@ -348,9 +353,6 @@ summary(Newfit)
 mean((Boston$medv - bestfit$fitted.values)^2)
 ```
 
-
-###Tests
-
 ###Outliers for second-order model
 ```{r}
 #Outlier for Y
@@ -368,25 +370,27 @@ which(abs(dffits(bestfit)) > 2*sqrt(p/n))
 
 ```{r}
 Boston_dropoutlier <- Boston[-c(8, 65, 153, 161, 162, 167, 187, 197, 204, 215, 266, 354, 365, 366, 369, 370, 371, 372, 373, 375, 376, 381, 410, 413, 414, 419, 493, 506),]
-fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(dis^2) + I(crim^2) + I(ptratio^2) + I(zn^2) + I(black^2) + I(tax^2), data = Boston_dropoutlier)
+fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(dis^2) + I(crim^2) + I(ptratio^2) + I(zn^2), data = Boston_dropoutlier)
 summary(fit)
 mean((Boston_dropoutlier$medv - fit$fitted.values)^2)
 ```
 
-```{r}
-par(mfrow = c(2,2))
-plot(fit)
-par(mfrow = c(1,1))
-```
+
 
 ###Attempting to reduce variables
 ```{r}
-reduced <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(crim^2) + I(ptratio^2) + I(zn^2) + I(black^2) + I(tax^2), data = Boston_dropoutlier)
+reduced <- lm(medv ~ crim + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(crim^2) + I(ptratio^2) + I(zn^2), data = Boston_dropoutlier)
 anova(reduced, fit)
-```
-```{r}
+#Drop the two predictors
 summary(reduced)
-mean((Boston_dropoutlier$medv - reduced$fitted.values)^2)
-#MSE increases, so not use reduced model.
+mean((Boston_dropoutlier$medv - reduced$fitted.value)^2)
 ```
+
+```{r}
+par(mfrow = c(2,2))
+plot(reduced)
+par(mfrow = c(1,1))
+```
+
+
 
