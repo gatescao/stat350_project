@@ -304,12 +304,17 @@ Case = c(1:n)
 plot(Case, dffits(bestfit), type="l")
 text(Case, dffits(bestfit), Case)
 ```
+
 ```{r}
 2*sqrt(p/n)
-which(dffits(firstfit) > 2*sqrt(p/n))
+which(abs(dffits(bestfit)) > 2*sqrt(p/n))
 ```
 
-
+```{r}
+Boston_dropoutlier <- Boston[-c(8, 65, 153, 161, 162, 167, 187, 197, 204, 215, 266, 354, 365, 366, 369, 370, 371, 372, 373, 375, 376, 381, 410, 413, 414, 419, 493, 506),]
+fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(dis^2) + I(crim^2) + I(ptratio^2) + I(zn^2) + I(black^2) + I(tax^2), data = Boston_dropoutlier)
+summary(fit)
+```
 
 ###Shrinkage methods (lasso & ridge)
 ```{r}
