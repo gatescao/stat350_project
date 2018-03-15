@@ -314,7 +314,16 @@ which(abs(dffits(bestfit)) > 2*sqrt(p/n))
 Boston_dropoutlier <- Boston[-c(8, 65, 153, 161, 162, 167, 187, 197, 204, 215, 266, 354, 365, 366, 369, 370, 371, 372, 373, 375, 376, 381, 410, 413, 414, 419, 493, 506),]
 fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + I(rm^2) + I(lstat^2) + I(dis^2) + I(crim^2) + I(ptratio^2) + I(zn^2) + I(black^2) + I(tax^2), data = Boston_dropoutlier)
 summary(fit)
+mean((Boston_dropoutlier$medv - fit$fitted.values)^2)
 ```
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit)
+par(mfrow = c(1,1))
+```
+
+
 
 ###Shrinkage methods (lasso & ridge)
 ```{r}
