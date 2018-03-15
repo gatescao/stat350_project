@@ -96,7 +96,9 @@ best_fit_bwd %>%
 ```{r}
 #Best first-order linear model
 firstfit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
-summary(firstfit) #Rsquared = 0.7406
+summary(firstfit)
+
+#Rsquared = 0.7406
 ```
 
 ```{r}
@@ -323,6 +325,10 @@ plot(fit)
 par(mfrow = c(1,1))
 ```
 
+```{r}
+reduced <- lm(medv ~ crim + chas + nox + rm + dis + rad + tax + ptratio + lstat + I(rm^2) + I(lstat^2) + I(crim^2) + I(ptratio^2) + I(zn^2), data = Boston_dropoutlier)
+anova(reduced, fit)
+```
 
 
 ###Shrinkage methods (lasso & ridge)
