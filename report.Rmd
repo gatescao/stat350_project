@@ -21,7 +21,7 @@ Problem: predict median house values
 ###Exploratory data analysis
 ```{r}
 Boston %>%
-  select(-chas) %>%
+  dplyr::select(-chas) %>%
   pairs()
 ```
 
@@ -32,15 +32,6 @@ cormat
 melted_cormat <- melt(cormat)
 ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
   geom_tile()
-```
-
-###Train-test split
-```{r}
-#train-test split
-set.seed(1)
-train <- sample(1:nrow(x), nrow(x)/2)
-test <- (-train)
-y_test <- y[test]
 ```
 
 ###Stepwise selection
@@ -104,21 +95,21 @@ best_fit_bwd %>%
 
 ```{r}
 #Best first-order linear model
-lm_fit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston[train,])
-summary(lm_fit) #Rsquared = 0.7406
+firstfit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat, data = Boston)
+summary(firstfit) #Rsquared = 0.7406
 ```
 
 ```{r}
 #Diagnostic plots
 par(mfrow = c(2,2))
-plot(lm_fit)
+plot(firstfit)
 par(mfrow = c(1,1))
 ```
 
 ```{r}
 #Mean squared error
-lm_pred <- predict(lm_fit, Boston[test,])
-mean((Boston[test,]$medv - lm_pred)^2)
+lm_pred <- predict(firstfit, Boston)
+mean((Boston$medv - lm_pred)^2)
 ```
 
 ```{r}
@@ -132,7 +123,192 @@ ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile()
 ```
 
+###Second-order Test
+```{r}
+### response
+medv <- Boston$medv
+
+### predictor
+crim <- Boston$crim
+zn <- Boston$zn
+indus <- Boston$indus
+chas <- Boston$chas
+nox <- Boston$nox
+rm <- Boston$rm
+age <- Boston$age
+dis <- Boston$dis
+rad <- Boston$rad
+tax <- Boston$tax
+ptratio <- Boston$ptratio
+black <- Boston$black
+lstat <- Boston$lstat
+##--
+crim2 <- (Boston$crim)^2
+zn2 <- (Boston$zn)^2
+indus2 <- (Boston$indus)^2
+chas2 <- (Boston$chas)^2
+nox2 <- (Boston$nox)^2
+rm2 <- (Boston$rm)^2
+age2 <- (Boston$age)^2
+dis2 <- (Boston$dis)^2
+rad2 <- (Boston$rad)^2
+tax2 <- (Boston$tax)^2
+ptratio2 <- (Boston$ptratio)^2
+black2 <- (Boston$black)^2
+lstat2 <- (Boston$lstat)^2
+ 
+#~#~# 
+plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
+plot(firstfit) #look at the first one 
+#Conclusion: The plot indicates that a second order terms is neccesary. 
+             #In addition, there are potential outliers at the fitted values
+             #near between the middle 20's
+#~#~#
+
+
+### Second ordered terms
+second <-  cbind(medv, crim, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat, crim2, zn2, chas2, nox2, rm2, dis2, rad2, tax2, ptratio2, black2, lstat2)
+secondfit <- lm(medv~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + crim2 + zn2 + chas2 + nox2 + rm2 + dis2 + rad2 + tax2 + ptratio2 + black2 + lstat2)
+                    #crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat
+View(second)
+### 
+
+
+#~ ~ ~  Testing to see if we need ANY second ordered terms: F-test  ~ ~ ~#
+
+
+### Null Hypothesis Testing:
+## Ho: All our second ordered terms = 0
+## Ha: At least one of our second ordered terms ≠ 0
+anova(firstfit, secondfit)
+
+## Conclusion: our pvalue is close to zero. We have reason to believe 
+## at least one of our second ordered terms ≠ 0
+
+
+#~~~~~~~~~~~~~! Forward, Backward, and Both Selection To Find !~~~~~~~~~~~~~~~#
+#~~~~~~~~! Our EXACT Second Order Variables Picture And Stepwise !~~~~~~~~~~~~~~~~~~~#
+
+# firstfit has only the first ordered terms
+Base <- firstfit
+    # My base case will be the all the first ordered terms
+
+# All will have all the second order models
+All <- lm(medv~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + crim2 + zn2 + chas2 + nox2 + rm2 + dis2 + rad2 + tax2 + ptratio2 + black2 + lstat2)
+               # crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + crim2 + zn2 + chas2 + nox2 + rm2 + dis2 + rad2 + tax2 + ptratio2 + black2 + lstat2)
+    # My maximum case will be all the second ordered terms
+
+#Step performance will show which second ordered terms we want
+step(Base, scope = list( upper=All, lower=~1 ), direction = "forward", trace=TRUE)
+step(All, direction = "backward", trace=TRUE )
+step(Base, scope = list( upper=All, lower=~1 ), direction = "both", trace=TRUE)
+
+########  Conclusion:
+#Forward
+#Call:
+#  lm(formula = medv ~ crim + zn + chas + nox + rm + dis + rad + 
+#       tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + 
+#       pratio2 + zn2 + black2 + tax2)
+#
+#Backward
+#Call:
+#lm(formula = medv ~ zn + chas + nox + rm + dis + rad + tax + 
+#     ptratio + black + lstat + crim + zn2 + rm2 + dis2 + tax2 + 
+#     ptratio2 + black2 + lstat2 + crim2)
+#
+#Both:
+#Call:
+#lm(formula = medv ~ crim + zn + chas + nox + rm + dis + rad + 
+#     tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + 
+#     ptratio2 + zn2 + black2 + tax2)
+###
+
+
+# Residuals against Fitted Values (Y against X)
+plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
+
+
+# Residuals Plot vs Regressors (Predictors, Independent)
+plot(firstfit$fitted.values, firstfit$residuals, xlab="Predicted values", ylab="residuals", main="Residual plot for Y")
+plot(crim, firstfit$residuals, xlab="Capita Crime Rate by Town", ylab="residuals", main="Residual plot for Crim")
+plot(zn, firstfit$residuals, xlab="Proportion of Residential Land Zoned", ylab="residuals", main="Residual plot for Zn")
+plot(chas, firstfit$residuals, xlab="Charles River", ylab="residuals", main="Residual plot for Chas")
+plot(nox, firstfit$residuals, xlab="Nitrogen Oxides Concentration", ylab="residuals", main="Residual plot for Nox")
+plot(rm, firstfit$residuals, xlab="Average Number of Rooms per Dwelling", ylab="residuals", main="Residual plot for Rm")
+plot(dis, firstfit$residuals, xlab="Weighted Mean of Distances to Five Boston Employment Centres", ylab="residuals", main="Residual plot for Dis")
+plot(rad, firstfit$residuals, xlab="Index of Accessibility to Radial Highways. ", ylab="residuals", main="Residual plot for Rad")
+plot(tax, firstfit$residuals, xlab="Full-Value Property-Tax Rate per $10,000", ylab="residuals", main="Residual plot for Tax")
+plot(ptratio, firstfit$residuals, xlab="Pupil-Teacher Ratio by Town", ylab="residuals", main="Residual plot for Ptratio")
+plot(black, firstfit$residuals, xlab="Proportion of Blacks by Towns", ylab="residuals", main="Residual plot for Black")
+plot(lstat, firstfit$residuals, xlab="Lower Status of the Population", ylab="residuals", main="Residual plot for Lstat")
+
+
+### We have two form of evidence (our plot (each predictor vs residuals) and stepwise function)
+### to show that the second ordered terms for rm2, lstat2, dis2, crim2, ptratio2, zn2, black2, 
+### and tax2 would need to be included in the model
+
+#~ Our most updated fit ~#
+bestfit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + ptratio2 + zn2 + black2 + tax2)
+newBoston <- cbind(medv, zn, chas, nox, rm, dis, rad, tax, ptratio, black, lstat, crim, rm2, lstat2,  dis2, crim2, ptratio2, zn2, black2, tax2)
+#newBoston is the updated data
+
+# TESTING TO CONFIRM that we do need the second degree terms through F-partial test:
+anova(firstfit, bestfit)
+
+mean((Boston$medv - bestfit$fitted.values)^2)
+
+# Conclusion: because our p-valus is close to zero,
+# we reject the null hypothesis. In other words, we have evidence
+# to suggest that these second order terms are NEEDED!
+
+
+#~~~~~~~~~~~~~! Confirming through summary (t-test) !~~~~~~~~~~~~~~~#
+
+summary(bestfit) #Room to drop variables
+
+#Drop tax2, zn2 (they are father away from data)
+Drop2<- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + ptratio2 + zn2)
+#~#~# Hypothesis Testing: #~#~
+#Ho: tax2 = zn2 = 0
+#Ha: At least one ≠ 0
+
+
+anova(Drop2, bestfit)
+###Conclusion: We can reject these two variables!
+
+bestfit<- Drop2
+
+
+#Updated:
+Newfit <- lm(medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + ptratio2 + zn2)
+#Meaning this is our official set: medv ~ crim + zn + chas + nox + rm + dis + rad + tax + ptratio + black + lstat + rm2 + lstat2 + dis2 + crim2 + ptratio2 + zn2)
+
+summary(Newfit)
+```
+
+```{r}
+#MSE of second-order
+     
+mean((Boston$medv - bestfit$fitted.values)^2)
+```
+
+
 ###Tests
+
+###Outliers for second-order model
+```{r}
+#Outlier for Y
+n = length(dffits(bestfit))
+p = 17
+Case = c(1:n)
+plot(Case, dffits(bestfit), type="l")
+text(Case, dffits(bestfit), Case)
+```
+```{r}
+2*sqrt(p/n)
+which(dffits(firstfit) > 2*sqrt(p/n))
+```
+
 
 
 ###Shrinkage methods (lasso & ridge)
